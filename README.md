@@ -13,6 +13,7 @@ Serviço de alta performance para geração de planilhas de torneios (Beach Tenn
 - **UX**: Congelamento de painéis e proteção de integridade de fórmulas.
 
 ### ACESSO ON-LINE VIA RENDER
+- Servidor (Deploy): `https://dashboard.render.com/`
 - `https://torneio-export-manager.onrender.com/health`
 - `https://torneio-export-manager.onrender.com/index.html`
 - **Gerenciamento**
