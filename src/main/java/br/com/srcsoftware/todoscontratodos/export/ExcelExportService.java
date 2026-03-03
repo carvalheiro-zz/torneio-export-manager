@@ -20,6 +20,7 @@ import org.apache.poi.ss.usermodel.SheetConditionalFormatting;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -30,153 +31,67 @@ import br.com.srcsoftware.todoscontratodos.model.dto.EtapaDTO;
 @Service
 public class ExcelExportService {
 
-	/*public byte[] gerarPlanilhaTorneio(List<AtletaDTO> atletas, List<EtapaDTO> etapas) throws IOException {
-		try (Workbook workbook = new XSSFWorkbook()) {
-
-			// 1. Aba de Ranking
-			Sheet sheetRanking = workbook.createSheet("Ranking e Saldo");
-			createHeader(sheetRanking, "Atleta", "Saldo Atual (Fórmula)");
-
-			for (int i = 0; i < atletas.size(); i++) {
-				Row row = sheetRanking.createRow(i + 1);
-				row.createCell(0).setCellValue(atletas.get(i).getNome());
-
-				// Exemplo de fórmula Sênior: SUMIF nas etapas para calcular pontos
-				// Aqui simplificaremos com uma célula para input ou totalizador
-				row.createCell(1).setCellValue(0);
-			}
-
-			// 2. Aba de Confrontos
-			Sheet sheetJogos = workbook.createSheet("Confrontos");
-			String[] colunas = { "Etapa", "Dupla 1", "Placar 1", "vs", "Placar 2", "Dupla 2" };
-			createHeader(sheetJogos, colunas);
-
-			int rowIdx = 1;
-			for (EtapaDTO etapa : etapas) {
-				for (ConfrontoDTO c : etapa.getConfrontos()) {
-					Row row = sheetJogos.createRow(rowIdx++);
-					row.createCell(0).setCellValue("Etapa " + etapa.getNomeEtapa());
-					row.createCell(1).setCellValue(c.getDupla1().toString());
-					row.createCell(2).setCellValue(0); // Placar 1
-					row.createCell(3).setCellValue("x");
-					row.createCell(4).setCellValue(0); // Placar 2
-					row.createCell(5).setCellValue(c.getDupla2().toString());
-				}
-			}
-
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			workbook.write(out);
-			return out.toByteArray();
-		}
-	}*/
-
-	private void createHeader(Sheet sheet, CellStyle headerStyle, String... titles) {		
+	
+	private void createHeaderSaldo(Sheet sheet, CellStyle headerStyle, String... titles) {		
 		Row header = sheet.createRow(0);
 		for (int i = 0; i < titles.length; i++) {
-			header.createCell(i).setCellValue(titles[i]);
+			Cell cellHeader = header.createCell(i);
+			cellHeader.setCellValue(titles[i]);
+			cellHeader.setCellStyle(headerStyle);
 		}
 	}
+	private void createHeaderConfrontos(Sheet sheet, CellStyle headerStyle) {
+	    Row headerRow = sheet.createRow(0);
+	    headerRow.setHeightInPoints(20); // Aumenta a altura para destacar com a fonte maior
 
-	/*public byte[] gerarPlanilhaTorneioComFormulas(List<AtletaDTO> atletas, List<EtapaDTO> etapas) throws IOException {
-		try (Workbook workbook = new XSSFWorkbook()) {
-			CellStyle inputStyle = workbook.createCellStyle();
-			inputStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
-			inputStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-			inputStyle.setBorderBottom(BorderStyle.THIN);
-			// Aplique este estilo nas células de P1 (coluna 3) e P2 (coluna 5)
+	    // Definição dos textos (pulando as colunas que serão "engolidas" pela mesclagem)
+	    headerRow.createCell(0).setCellValue("Etapa");
+	    headerRow.createCell(1).setCellValue("Dupla 1"); // Será mesclada com a 2
+	    headerRow.createCell(3).setCellValue("P1");
+	    headerRow.createCell(4).setCellValue("x");
+	    headerRow.createCell(5).setCellValue("P2");
+	    headerRow.createCell(6).setCellValue("Dupla 2"); // Será mesclada com a 7
+	    
+	    // Aplicar estilo em todas as células do range (importante para bordas)
+	    for (int i = 0; i <= 7; i++) {
+	        Cell cell = headerRow.getCell(i);
+	        if (cell == null) cell = headerRow.createCell(i);
+	        cell.setCellStyle(headerStyle);
+	    }
 
-			Sheet sheetRanking = workbook.createSheet("Ranking");
-			Sheet sheetJogos = workbook.createSheet("Confrontos");
+	    // Mesclagem da Dupla 1 (Colunas B e C -> índices 1 e 2)
+	    CellRangeAddress dupla1 = new CellRangeAddress(0, 0, 1, 2);
+	    sheet.addMergedRegion(dupla1);
 
-			// 1. Cabeçalhos
-			createHeader(sheetRanking, "Atleta", "Saldo Total");
-			createHeader(sheetJogos, "Etapa", "Atleta 1 (D1)", "Atleta 2 (D1)", "P1", "x", "P2", "Atleta 1 (D2)", "Atleta 2 (D2)");
+	    // Mesclagem da Dupla 2 (Colunas G e H -> índices 6 e 7)
+	    CellRangeAddress dupla2 = new CellRangeAddress(0, 0, 6, 7);
+	    sheet.addMergedRegion(dupla2);
 
-			// 2. Preencher Confrontos (Aba "Confrontos")
-			int rowIdx = 1;
-			for (EtapaDTO etapa : etapas) {
-				for (ConfrontoDTO c : etapa.getConfrontos()) {
-					Row row = sheetJogos.createRow(rowIdx++);
-					row.createCell(0).setCellValue("Etapa " + etapa.getNomeEtapa());
-					row.createCell(1).setCellValue(c.getDupla1().getAtleta1().getNome());
-					row.createCell(2).setCellValue(c.getDupla1().getAtleta2().getNome());
-
-					// row.createCell(3).setCellValue(0); // Coluna D (P1)
-					// Na hora de criar as células de placar (P1 e P2):
-					Cell cellP1 = row.createCell(3);
-					cellP1.setCellStyle(inputStyle); // Aplica o estilo visual de campo editável
-					// cellP1.setCellValue(0); // Coluna D (P1)
-
-					row.createCell(4).setCellValue("x"); // Coluna E
-
-					// row.createCell(5).setCellValue(0); // Coluna F (P2)
-					// Na hora de criar as células de placar (P1 e P2):
-					Cell cellP2 = row.createCell(5);
-					cellP2.setCellStyle(inputStyle);
-					// cellP2.setCellValue(0); // Coluna F (P2)
-
-					row.createCell(6).setCellValue(c.getDupla2().getAtleta1().getNome());
-					row.createCell(7).setCellValue(c.getDupla2().getAtleta2().getNome());
-				}
-
-				// 2. A LINHA EM BRANCO: Simplesmente incrementa o índice
-				// Isso deixa uma linha física vazia no Excel antes da próxima etapa
-				rowIdx++;
-			}
-
-			// 3. Preencher Ranking com Fórmulas (Aba "Ranking")
-			// int totalJogos = etapas.stream().mapToInt(e ->
-			// e.getConfrontos().size()).sum();
-
-			int limiteExcel = rowIdx; // O valor exato da última linha
-
-			for (int i = 0; i < atletas.size(); i++) {
-				Row row = sheetRanking.createRow(i + 1);
-				String nomeAtleta = atletas.get(i).getNome();
-				row.createCell(0).setCellValue(nomeAtleta);
-
-				// Definição dos Ranges (Ex: Confrontos!$B$2:$B$120)
-				String rD1A1 = "Confrontos!$B$2:$B$" + limiteExcel;
-				String rD1A2 = "Confrontos!$C$2:$C$" + limiteExcel;
-				String rD2A1 = "Confrontos!$G$2:$G$" + limiteExcel;
-				String rD2A2 = "Confrontos!$H$2:$H$" + limiteExcel;
-				String rP1 = "Confrontos!$D$2:$D$" + limiteExcel;
-				String rP2 = "Confrontos!$F$2:$F$" + limiteExcel;
-
-				// Usamos String.format para evitar erros de concatenação "Left-hand side"
-				// A lógica: (Atleta na D1) * (Placar preenchido) * (Cálculo de pontos)
-
-				String templateFormula = """
-						SUMPRODUCT(((%s="%s")+(%s="%s"))*(%s<>"")*(%s<>"")*((%s>%s)*3+(%s=%s)*1))
-						""";
-
-				String f1 = String.format(templateFormula, rD1A1, nomeAtleta, rD1A2, nomeAtleta, rP1, rP2, rP1, rP2, rP1, rP2);
-				String f2 = String.format(templateFormula, rD2A1, nomeAtleta, rD2A2, nomeAtleta, rP1, rP2, rP2, rP1, rP2, rP1);
-
-				Cell cellSaldo = row.createCell(1);
-				cellSaldo.setCellFormula(f1 + "+" + f2);
-			}
-
-			// Forçar o Excel a recalcular as fórmulas ao abrir
-			workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
-			sheetRanking.setForceFormulaRecalculation(true);
-
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			workbook.write(out);
-			return out.toByteArray();
-		}
-	}*/
-
+	    // Dica Sênior: Garantir bordas na região mesclada (opcional se o headerStyle já tiver)
+	    RegionUtil.setBorderBottom(BorderStyle.THIN, dupla1, sheet);
+	    RegionUtil.setBorderBottom(BorderStyle.THIN, dupla2, sheet);
+	}
+	
 	public byte[] gerarPlanilhaTorneioComFormulasNova(List<AtletaDTO> atletas, List<EtapaDTO> etapas) throws IOException {
 		try (Workbook workbook = new XSSFWorkbook()) {
 			CellStyle inputStyle = createInputStyle(workbook);
 			Sheet sheetRanking = workbook.createSheet("Ranking");
 			Sheet sheetJogos = workbook.createSheet("Confrontos");
+			
+			// No seu ExcelExportService, após criar a sheet:
+			sheetRanking.setDisplayGridlines(false);
+			// Se quiser remover da aba de jogos também:
+			sheetJogos.setDisplayGridlines(false);
 
+			
+			CellStyle baseStyle = createBaseStyle(workbook);
+			
 			CellStyle headerStyle = createHeaderStyle(workbook);
+			CellStyle centerCellValue = createValueCenterStyle(workbook);
+			CellStyle borderCellValue = createInputBorderStyle(workbook);
 			
 			// 1. PRIMEIRA PASSADA: Preencher os Jogos para descobrir o rowIdx final
-			createHeader(sheetJogos, headerStyle, "Etapa", "Atleta 1 (D1)", "Atleta 2 (D1)", "P1", "x", "P2", "Atleta 1 (D2)", "Atleta 2 (D2)");
+			createHeaderConfrontos(sheetJogos, headerStyle);
 
 			int rowIdx = 1;
 			for (EtapaDTO etapa : etapas) {
@@ -187,29 +102,45 @@ public class ExcelExportService {
 
 				for (ConfrontoDTO c : etapa.getConfrontos()) {
 					Row row = sheetJogos.createRow(rowIdx++);
-					row.createCell(0).setCellValue(etapa.getNomeEtapa());
-					row.createCell(1).setCellValue(c.getDupla1().getAtleta1().getNome());
-					row.createCell(2).setCellValue(c.getDupla1().getAtleta2().getNome());
+					
+					Cell cellNomeAtleta = row.createCell(0);
+					cellNomeAtleta.setCellValue("");
+					cellNomeAtleta.setCellStyle(baseStyle);
+					
+					Cell cellAtleta1 = row.createCell(1);
+					cellAtleta1.setCellStyle(borderCellValue);
+					cellAtleta1.setCellValue(c.getDupla1().getAtleta1().getNome());
+					
+					Cell cellAtleta2 = row.createCell(2);
+					cellAtleta2.setCellStyle(borderCellValue);
+					cellAtleta2.setCellValue(c.getDupla1().getAtleta2().getNome());
 
 					// Coluna D (P1)
 					Cell cellP1 = row.createCell(3);
 					cellP1.setCellStyle(inputStyle);
 
-					row.createCell(4).setCellValue("x");
+					Cell cellX = row.createCell(4);
+					cellX.setCellValue("x");
+					cellX.setCellStyle(centerCellValue);
 
 					// Coluna F (P2)
 					Cell cellP2 = row.createCell(5);
 					cellP2.setCellStyle(inputStyle);
 
-					row.createCell(6).setCellValue(c.getDupla2().getAtleta1().getNome());
-					row.createCell(7).setCellValue(c.getDupla2().getAtleta2().getNome());
+					Cell cellAtleta1Dupla2 = row.createCell(6);
+					cellAtleta1Dupla2.setCellStyle(borderCellValue);
+					cellAtleta1Dupla2.setCellValue(c.getDupla2().getAtleta1().getNome());
+					
+					Cell cellAtleta2Dupla2 = row.createCell(7);
+					cellAtleta2Dupla2.setCellStyle(borderCellValue);
+					cellAtleta2Dupla2.setCellValue(c.getDupla2().getAtleta2().getNome());
 				}
 				// Linha em branco para separar as etapas
 				rowIdx++;
 			}
 
 			// 2. SEGUNDA PASSADA: Criar Ranking com o limite real do Excel
-			createHeader(sheetRanking, headerStyle, "Atleta", "Saldo Total");
+			createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Saldo Total");
 
 			// O limite agora é o rowIdx exato que o loop acima atingiu
 			int limiteExcel = rowIdx;
@@ -217,7 +148,10 @@ public class ExcelExportService {
 			for (int i = 0; i < atletas.size(); i++) {
 				Row row = sheetRanking.createRow(i + 1);
 				String nomeAtleta = atletas.get(i).getNome();
-				row.createCell(0).setCellValue(nomeAtleta);
+				
+				Cell cellNomeAtleta = row.createCell(0);
+				cellNomeAtleta.setCellStyle(baseStyle);
+				cellNomeAtleta.setCellValue(nomeAtleta);
 
 				// Ranges dinâmicos baseados no limiteExcel
 				String rD1A1 = "Confrontos!$B$2:$B$" + limiteExcel;
@@ -254,7 +188,7 @@ public class ExcelExportService {
 			workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
 			sheetRanking.setForceFormulaRecalculation(true);
 			sheetJogos.setForceFormulaRecalculation(true);
-
+			
 			// 3. Persistência e Flush
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			workbook.write(out);
@@ -266,13 +200,53 @@ public class ExcelExportService {
 		}
 
 	}
+	
+	private CellStyle createInputBorderStyle(Workbook workbook) {
+		CellStyle style = workbook.createCellStyle();
+
+		// Configuração de Bordas (Transforma a célula em uma "caixa")
+		style.setBorderBottom(BorderStyle.THIN);
+		style.setBottomBorderColor(IndexedColors.GREY_40_PERCENT.getIndex());
+		style.setBorderTop(BorderStyle.THIN);
+		style.setTopBorderColor(IndexedColors.GREY_40_PERCENT.getIndex());
+		style.setBorderLeft(BorderStyle.THIN);
+		style.setLeftBorderColor(IndexedColors.GREY_40_PERCENT.getIndex());
+		style.setBorderRight(BorderStyle.THIN);
+		style.setRightBorderColor(IndexedColors.GREY_40_PERCENT.getIndex());
+
+		// Alinhamento centralizado para os números do placar
+		style.setAlignment(HorizontalAlignment.CENTER);
+		style.setVerticalAlignment(VerticalAlignment.CENTER);
+		
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14);
+		style.setFont(font);
+
+		return style;
+	}
+	
+	private CellStyle createValueCenterStyle(Workbook workbook) {
+		CellStyle style = workbook.createCellStyle();
+		
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14);
+		style.setFont(font);
+		
+		style.setAlignment(HorizontalAlignment.CENTER);
+		style.setVerticalAlignment(VerticalAlignment.CENTER);
+		
+		return style;
+	}
 
 	private CellStyle createHeaderStyle(Workbook workbook) {
 		CellStyle style = workbook.createCellStyle();
+		
 		Font font = workbook.createFont();
 		font.setBold(true);
-		font.setColor(IndexedColors.WHITE.getIndex());
-		style.setFont(font);
+		font.setColor(IndexedColors.WHITE.getIndex());	
+		font.setFontHeightInPoints((short) 18);		
+		style.setFont(font);		
+		
 		style.setFillForegroundColor(IndexedColors.BLUE_GREY.getIndex());
 		style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		style.setAlignment(HorizontalAlignment.CENTER);
@@ -281,6 +255,10 @@ public class ExcelExportService {
 
 	private CellStyle createInputStyle(Workbook workbook) {
 		CellStyle style = workbook.createCellStyle();
+		
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14);
+		style.setFont(font);
 
 		// Cor de fundo para indicar campo de entrada (Amarelo bem suave)
 		style.setFillForegroundColor(IndexedColors.LEMON_CHIFFON.getIndex());
@@ -309,19 +287,29 @@ public class ExcelExportService {
 		DataFormat df = workbook.createDataFormat();
 		CellStyle redStyle = workbook.createCellStyle();
 		redStyle.setDataFormat(df.getFormat("#,##0;[Red]-#,##0"));
+		
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14);
+		redStyle.setFont(font);
 
 		return redStyle;
+	}
+	
+	private CellStyle createBaseStyle(Workbook workbook) {				
+		CellStyle style = workbook.createCellStyle();		
+		
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 14);
+		style.setFont(font);
+
+		return style;
 	}
 
 	private void aplicarCoresPodio(Sheet sheet, int totalAtletas) {
 		SheetConditionalFormatting cf = sheet.getSheetConditionalFormatting();
 		int ultimaLinha = totalAtletas + 1;
 		CellRangeAddress[] regions = { CellRangeAddress.valueOf("B2:B" + ultimaLinha) };
-		String rangeRef = "$B$2:$B$" + ultimaLinha;
-
-		// FÓRMULA SÊNIOR (DENSE RANK):
-		// Conta quantos valores ÚNICOS e MAIORES existem acima do valor atual.
-		// Se o resultado for 0, ele é o 1º (Ouro). Se for 1, ele é o 2º (Prata)...
+		String rangeRef = "$B$2:$B$" + ultimaLinha;		
 
 		// Ouro: 0 valores únicos maiores que ele
 		String fOuro = String.format("AND(B2<>0, SUMPRODUCT((%s>B2)/COUNTIF(%s, %s&\"\"))=0)", rangeRef, rangeRef, rangeRef);
@@ -344,41 +332,5 @@ public class ExcelExportService {
 		fill.setFillBackgroundColor(cor);
 		fill.setFillPattern(PatternFormatting.SOLID_FOREGROUND);
 		cf.addConditionalFormatting(regions, rule);
-	}
-
-	/*
-	 * private void aplicarCoresPodio(Sheet sheet, int totalAtletas) {
-	 * SheetConditionalFormatting cf = sheet.getSheetConditionalFormatting();
-	 * 
-	 * // Range: B2 até B(N) int ultimaLinha = totalAtletas + 1; CellRangeAddress[]
-	 * regions = { CellRangeAddress.valueOf("B2:B" + ultimaLinha) };
-	 * 
-	 * // O range interno da função LARGE deve ser absoluto ($B$2:$B$N) String
-	 * rangeRef = "$B$2:$B$" + ultimaLinha;
-	 * 
-	 * // IMPORTANTE: Use VÍRGULA (,) para os argumentos da função, // o Excel
-	 * traduzirá para ponto e vírgula sozinho no PT-BR. // B2 deve ser relativo (sem
-	 * $) para que a regra avalie cada linha individualmente. String f1 =
-	 * String.format("AND(B2<>0, B2=LARGE(%s, 1))", rangeRef); String f2 =
-	 * String.format("AND(B2<>0, B2=LARGE(%s, 2))", rangeRef); String f3 =
-	 * String.format("AND(B2<>0, B2=LARGE(%s, 3))", rangeRef);
-	 * 
-	 * ConditionalFormattingRule r1 = cf.createConditionalFormattingRule(f1);
-	 * pincelar(r1, IndexedColors.GOLD.getIndex());
-	 * 
-	 * ConditionalFormattingRule r2 = cf.createConditionalFormattingRule(f2);
-	 * pincelar(r2, IndexedColors.GREY_25_PERCENT.getIndex());
-	 * 
-	 * ConditionalFormattingRule r3 = cf.createConditionalFormattingRule(f3);
-	 * pincelar(r3, IndexedColors.TAN.getIndex());
-	 * 
-	 * cf.addConditionalFormatting(regions, r1);
-	 * cf.addConditionalFormatting(regions, r2);
-	 * cf.addConditionalFormatting(regions, r3); }
-	 * 
-	 * private void pincelar(ConditionalFormattingRule regra, short cor) {
-	 * PatternFormatting fill = regra.createPatternFormatting();
-	 * fill.setFillBackgroundColor(cor);
-	 * fill.setFillPattern(PatternFormatting.SOLID_FOREGROUND); }
-	 */
+	}	
 }
