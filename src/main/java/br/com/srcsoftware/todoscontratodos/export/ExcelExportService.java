@@ -140,7 +140,8 @@ public class ExcelExportService {
 			}
 
 			// 2. SEGUNDA PASSADA: Criar Ranking com o limite real do Excel
-			createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Saldo Total");
+			//createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Saldo Total");
+			createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Vitórias", "Saldo Total");
 
 			// O limite agora é o rowIdx exato que o loop acima atingiu
 			int limiteExcel = rowIdx;
@@ -160,26 +161,46 @@ public class ExcelExportService {
 				String rD2A2 = "Confrontos!$H$2:$H$" + limiteExcel;
 				String rP1 = "Confrontos!$D$2:$D$" + limiteExcel;
 				String rP2 = "Confrontos!$F$2:$F$" + limiteExcel;
+				
+				// 1. Defina o template com os placeholders corretos (8 placeholders por template)
+				// Argumentos: DuplaA, NomeAtleta, DuplaB, NomeAtleta, ColunaP1, ColunaP2, ColunaVencedora, ColunaPerdedora
+				String templateVitoria = "SUMPRODUCT(((%s=\"%s\")+(%s=\"%s\"))*ISNUMBER(%s)*ISNUMBER(%s)*(%s>%s))";
 
-				// Fórmula corrigida: Ignora 0x0 se as células estiverem vazas (<>"")
-				// String templateSaldo = """
-				// SUMPRODUCT(((%s="%s")+(%s="%s"))*(%s<>"")*(%s<>"")*((%s>%s)*3+(%s=%s)*1))
-				// """;
+				// 2. No loop de atletas, passe os argumentos exatamente nesta ordem:
+				String fVitD1 = String.format(templateVitoria, 
+				    rD1A1, nomeAtleta, rD1A2, nomeAtleta, // Quem é a dupla?
+				    rP1, rP2,                             // As células têm números?
+				    rP1, rP2                              // P1 > P2?
+				);
+
+				String fVitD2 = String.format(templateVitoria, 
+				    rD2A1, nomeAtleta, rD2A2, nomeAtleta, // Quem é a dupla?
+				    rP1, rP2,                             // As células têm números?
+				    rP2, rP1                              // P2 > P1?
+				);
+
+				// 3. Atribua a fórmula à célula de Vitórias (Coluna B)
+				Cell cellVitorias = row.createCell(1);
+				cellVitorias.setCellStyle(centerCellValue);
+				cellVitorias.setCellFormula(fVitD1 + "+" + fVitD2);
+				
 				String templateSaldo = """
 						SUMPRODUCT(((%s="%s")+(%s="%s"))*(%s<>"")*(%s<>"")*(%s-%s))
 						""";
-
+				
 				String f1 = String.format(templateSaldo, rD1A1, nomeAtleta, rD1A2, nomeAtleta, rP1, rP2, rP1, rP2, rP1, rP2);
 				String f2 = String.format(templateSaldo, rD2A1, nomeAtleta, rD2A2, nomeAtleta, rP1, rP2, rP2, rP1, rP2, rP1);
 
-				Cell cellSaldo = row.createCell(1);
+				Cell cellSaldo = row.createCell(2);
 				cellSaldo.setCellStyle(createInputStyleRed(workbook));
 				cellSaldo.setCellFormula(f1 + "+" + f2);
 			}
 
 			// 1. Regras de Negócio e Estética (Pódio e Filtros)
 			aplicarCoresPodio(sheetRanking, atletas.size());
-			sheetRanking.setAutoFilter(new CellRangeAddress(0, atletas.size(), 0, 1));
+
+			sheetRanking.setAutoFilter(new CellRangeAddress(0, atletas.size(), 0, 2));
+			
 			sheetJogos.createFreezePane(0, 1); // Congela o cabeçalho dos jogos
 
 			// 2. Preparação do Motor de Fórmulas
