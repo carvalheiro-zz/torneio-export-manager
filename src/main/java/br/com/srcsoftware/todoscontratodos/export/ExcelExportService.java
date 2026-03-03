@@ -140,7 +140,6 @@ public class ExcelExportService {
 			}
 
 			// 2. SEGUNDA PASSADA: Criar Ranking com o limite real do Excel
-			//createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Saldo Total");
 			createHeaderSaldo(sheetRanking, headerStyle, "Atleta", "Vitórias", "Saldo Total");
 
 			// O limite agora é o rowIdx exato que o loop acima atingiu

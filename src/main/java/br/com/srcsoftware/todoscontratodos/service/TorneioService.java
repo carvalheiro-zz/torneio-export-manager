@@ -18,39 +18,40 @@ import lombok.extern.slf4j.Slf4j;
 public class TorneioService {
 
 	public List<EtapaDTO> processar(String lista1) {
-
-		log.info("Criando um List com os Atletas informados: {}", lista1);
+		log.info("Criando um List com os Atletas informados");
+		log.debug("Criando um List com os Atletas informados: {}", lista1);
 		// Gera um List contendo os Atletas
 		List<AtletaDTO> atletasA = parseParaAtletas(lista1);
 		atletasA.forEach(atleta -> {
-			log.info("Atleta: {}", atleta);
+			log.debug("Atleta: {}", atleta);
 		});
 
-		log.info("Montando as duplas com os {} atletas", atletasA.size());
+		log.debug("Montando as duplas com os {} atletas", atletasA.size());
 		// Forma as duplas utilizando os atletas da lista. Usando a regra Todos jogam
 		// com Todos.
 		List<DuplaDTO> duplas = gerarTodasAsDuplasUnicas(atletasA);
 		duplas.forEach(dupla -> {
-			log.info("Duplas: {}", dupla);
+			log.debug("Duplas: {}", dupla);
 		});
 
-		log.info("Gerando os confrontos para {} duplas:", duplas.size());
+		log.debug("Gerando os confrontos para {} duplas:", duplas.size());
 		List<List<DuplaDTO>> confrontos = gerarConfrontos(atletasA);
 		confrontos.forEach(confronto -> {
-			log.info("Confronto {} X {} | {} X {}", confronto.get(0), confronto.get(1), confronto.get(2), confronto.get(3));
+			log.debug("Confronto {} X {} | {} X {}", confronto.get(0), confronto.get(1), confronto.get(2), confronto.get(3));
 		});
 
-		log.info("Gerando os confrontosAleatorios para {} duplas:", duplas.size());
+		log.debug("Gerando os confrontosAleatorios para {} duplas:", duplas.size());
 		List<List<DuplaDTO>> confrontosAleatorios = gerarEtapasAleatorias(atletasA);
 		confrontosAleatorios.forEach(confronto -> {
-			log.info("Confronto {} X {} | {} X {}", confronto.get(0), confronto.get(1), confronto.get(2), confronto.get(3));
+			log.debug("Confronto {} X {} | {} X {}", confronto.get(0), confronto.get(1), confronto.get(2), confronto.get(3));
 		});
 
 		List<EtapaDTO> etapas = gerarEtapas(confrontosAleatorios);
 		etapas.forEach(etapa -> {
-			log.info("Etapa {} - {}", etapa.getNomeEtapa(), etapa.getConfrontos());
+			log.debug("Etapa {} - {}", etapa.getNomeEtapa(), etapa.getConfrontos());
 		});
 
+		log.info("Tabela com as Etapas e os Confrontos criada com SUCESSO.");
 		return etapas;
 	}
 

@@ -11,3 +11,14 @@ Serviço de alta performance para geração de planilhas de torneios (Beach Tenn
 - **Ranking Dinâmico**: Fórmulas `SUMPRODUCT` e `COUNTIF` para saldo de games.
 - **Pódio Inteligente**: Formatação condicional com lógica de *Dense Rank* (Ouro, Prata, Bronze).
 - **UX**: Congelamento de painéis e proteção de integridade de fórmulas.
+
+### ACESSO ON-LINE VIA RENDER
+- `https://torneio-export-manager.onrender.com/health`
+- `https://torneio-export-manager.onrender.com/index.html`
+- **Gerenciamento**
+    - `https://dashboard.uptimerobot.com/monitors`
+    - `stats.uptimerobot.com/aQccQwMSju`
+    
+### SWAGGER
+   - Visual: `http://localhost:8080/swagger-ui.html`
+   - JSON: `http://localhost:8080/api-docs`
