@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: torneio-export-manager
+    runtime: docker # Substitui o antigo 'env: docker'
+    plan: free
+    region: ohio
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx384m -Xms128m -Djava.awt.headless=true"
+      - key: PORT
+        value: 8080

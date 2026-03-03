@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class TodosContraTodosSportApplication {
 
 	public static void main(String[] args) {
+		// Define o modo headless programaticamente
+        System.setProperty("java.awt.headless", "true");
 		SpringApplication.run(TodosContraTodosSportApplication.class, args);
 	}
 
