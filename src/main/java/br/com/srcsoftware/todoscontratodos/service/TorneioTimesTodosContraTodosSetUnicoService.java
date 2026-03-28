@@ -1,6 +1,8 @@
 package br.com.srcsoftware.todoscontratodos.service;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,6 +71,10 @@ public class TorneioTimesTodosContraTodosSetUnicoService {
 	
 	public List<GrupoDTO> gerarGruposComConfrontos(List<TimeDTO> times, int quantidadeGrupos) {
 	    if (times == null || times.isEmpty() || quantidadeGrupos <= 0) return List.of();
+	    
+	    times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
 
 	    List<GrupoDTO> grupos = new ArrayList<>();
 	    for (int i = 0; i < quantidadeGrupos; i++) {
@@ -96,5 +102,13 @@ public class TorneioTimesTodosContraTodosSetUnicoService {
 	    }
 
 	    return grupos;
+	}
+	
+	public List<TimeDTO> sorteiarAleatoriamente(List<TimeDTO> times) {
+	    List<TimeDTO> timesSorteados = new ArrayList<>(times);
+	    // Shuffle robusto
+	    Collections.shuffle(timesSorteados, new SecureRandom());
+	    
+	    return timesSorteados;
 	}
 }
