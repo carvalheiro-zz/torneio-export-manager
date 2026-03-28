@@ -87,10 +87,13 @@ public class ExcelExportTimesSetUnicoService {
                     Row row = resumoSheet.getRow(rowIdx);
                     if (row == null) row = resumoSheet.createRow(rowIdx);
                     row.createCell(colIdx).setCellValue(time.getNome());
+                    
+                    row.createCell(colIdx+1).setCellValue(0);
+                    
                     rowIdx++;
                 }
                 resumoSheet.autoSizeColumn(colIdx);
-                colIdx += 2; // Espaço entre as colunas dos grupos
+                colIdx += 3; // Espaço entre as colunas dos grupos
             }
 
             // 2. Abas Individuais por Grupo (Confrontos)
@@ -102,15 +105,19 @@ public class ExcelExportTimesSetUnicoService {
                 // Cabeçalho dos Jogos
                 Row headerRow = sheet.createRow(0);
                 createCell(headerRow, 0, "Mandante", headerStyle);
-                createCell(headerRow, 1, "vs", headerStyle);
-                createCell(headerRow, 2, "Visitante", headerStyle);
+                createCell(headerRow, 1, "", headerStyle);
+                createCell(headerRow, 2, "vs", headerStyle);
+                createCell(headerRow, 3, "", headerStyle);
+                createCell(headerRow, 4, "Visitante", headerStyle);
 
                 int rowIdx = 1;
                 for (ConfrontoTimesDTO confronto : grupo.getConfrontos()) {
                     Row row = sheet.createRow(rowIdx++);
                     row.createCell(0).setCellValue(confronto.getTime1().getNome());
-                    row.createCell(1).setCellValue("x");
-                    row.createCell(2).setCellValue(confronto.getTime2().getNome());
+                    row.createCell(1).setCellValue("");
+                    row.createCell(2).setCellValue("x");
+                    row.createCell(3).setCellValue("");
+                    row.createCell(4).setCellValue(confronto.getTime2().getNome());
                 }
 
                 sheet.autoSizeColumn(0);
