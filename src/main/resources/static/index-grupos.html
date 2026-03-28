@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Torneio - Grupos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .topo-manager {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 4px solid #17a2b8; /* Cor diferenciada para Grupos */
+        }
+        .instrucoes {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #17a2b8;
+        }
+        .card-header-custom {
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .nav-links .btn {
+            margin: 2px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <header class="topo-manager shadow-sm">
+        <div class="container text-center">
+            <h2 class="mb-0">TORNEIO EXPORT MANAGER - <span class="text-info">GRUPOS</span></h2>
+            <small>Distribuição por Grupos e Confrontos Internos</small>
+        </div>
+        
+		<div class="container mt-3 nav-links text-center">
+            <a href="index.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-person-fill"></i> Super 8/12/16
+            </a>
+            <a href="index-times.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-shield-shaded"></i> Times (Melhor de 3)
+            </a>
+            <a href="index-times-set-unico.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-1-circle"></i> Times (Set Único)
+            </a>
+            <a href="index-grupos.html" class="btn btn-info btn-sm active text-white">
+                <i class="bi bi-diagram-3"></i> Grupos
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow border-0">
+                    <div class="card-header card-header-custom p-3">
+                        <i class="bi bi-collection-play-fill me-2"></i> Configuração dos Grupos
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="numGrupos" class="form-label fw-bold">Qtd. de Grupos:</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-grid-3x3-gap"></i></span>
+                                    <input type="number" id="numGrupos" class="form-control" value="2" min="1" max="20">
+                                </div>
+                            </div>
+                        </div>
+
+                        <label for="listaTimes" class="form-label fw-bold">
+                            Nomes dos Times (Um por linha):
+                        </label>
+                        
+                        <textarea id="listaTimes" class="form-control mb-3 shadow-sm" rows="10" 
+                            placeholder="Exemplo:&#10;CEARA&#10;FORTALEZA&#10;CUIABA...">CEARA
+FORTALEZA
+CUIABA
+ATLETICO GO
+JUVENTUDE
+AVAI
+PONTE PRETA
+AMERICA MG
+SPORT</textarea>
+
+                        <div class="instrucoes mb-4">
+                            <p class="mb-2"><strong><i class="bi bi-info-circle"></i> Regras de Distribuição:</strong></p>
+                            <ul class="mb-0">
+                                <li><strong>Equilíbrio:</strong> Os times são distribuídos automaticamente entre os grupos informados.</li>
+                                <li><strong>Confrontos:</strong> O sistema gera a tabela "Todos contra Todos" dentro de cada grupo.</li>
+                                <li><strong>Excel:</strong> A planilha conterá uma aba de Resumo e abas específicas para cada grupo.</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid">
+                            <button onclick="exportarExcelGrupos()" class="btn btn-info btn-lg shadow text-white">
+                                <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i> Gerar e Exportar Grupos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small text-center bg-white border-top-0 py-3">
+                        <i class="bi bi-terminal"></i> Endpoint: /torneio-times/exportar-grupos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function exportarExcelGrupos() {
+            const nomes = document.getElementById('listaTimes').value;
+            const numGrupos = document.getElementById('numGrupos').value;
+            
+            if (!nomes.trim()) {
+                alert("Por favor, insira os nomes dos times.");
+                return;
+            }
+
+            if (numGrupos < 1) {
+                alert("A quantidade de grupos deve ser pelo menos 1.");
+                return;
+            }
+
+            const linhas = nomes.split('\n').filter(n => n.trim() !== "");
+            if (linhas.length < numGrupos) {
+                alert("O número de times deve ser maior ou igual ao número de grupos.");
+                return;
+            }
+
+            // Submissão via formulário dinâmico para o endpoint de Grupos
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/torneio-times/exportar-grupos'; 
+
+            const inputLista = document.createElement('input');
+            inputLista.type = 'hidden';
+            inputLista.name = 'lista1'; 
+            inputLista.value = nomes;
+
+            const inputQtd = document.createElement('input');
+            inputQtd.type = 'hidden';
+            inputQtd.name = 'numGrupos'; 
+            inputQtd.value = numGrupos;
+
+            form.appendChild(inputLista);
+            form.appendChild(inputQtd);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+</body>
+</html>

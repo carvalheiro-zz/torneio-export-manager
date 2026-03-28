@@ -26,7 +26,10 @@ import org.springframework.stereotype.Service;
 
 import br.com.srcsoftware.todoscontratodos.model.dto.AtletaDTO;
 import br.com.srcsoftware.todoscontratodos.model.dto.ConfrontoDTO;
+import br.com.srcsoftware.todoscontratodos.model.dto.ConfrontoTimesDTO;
 import br.com.srcsoftware.todoscontratodos.model.dto.EtapaDTO;
+import br.com.srcsoftware.todoscontratodos.model.dto.EtapaTimesDTO;
+import br.com.srcsoftware.todoscontratodos.model.dto.TimeDTO;
 
 @Service
 public class ExcelExportService {
@@ -353,4 +356,161 @@ public class ExcelExportService {
 		fill.setFillPattern(PatternFormatting.SOLID_FOREGROUND);
 		cf.addConditionalFormatting(regions, rule);
 	}	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// ######################### TIMES #########################
+	public byte[] gerarPlanilhaTorneioTimes(List<TimeDTO> times, List<EtapaTimesDTO> etapas) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            // Estilos reaproveitados da sua classe original
+            CellStyle headerStyle = createHeaderStyle(workbook);
+            CellStyle inputStyle = createInputStyle(workbook);
+            CellStyle baseStyle = createBaseStyle(workbook);
+            CellStyle centerStyle = createValueCenterStyle(workbook);
+            CellStyle borderStyle = createInputBorderStyle(workbook);
+
+            Sheet sheetRanking = workbook.createSheet("Ranking");
+            Sheet sheetJogos = workbook.createSheet("Confrontos");
+            sheetRanking.setDisplayGridlines(false);
+            sheetJogos.setDisplayGridlines(false);
+
+            // 1. ABA DE CONFRONTOS
+            createHeaderTimes(sheetJogos, headerStyle);
+            int rowIdx = 1;
+
+            for (EtapaTimesDTO etapa : etapas) {
+                Row rowTitulo = sheetJogos.createRow(rowIdx++);
+                Cell cellTitulo = rowTitulo.createCell(0);
+                cellTitulo.setCellValue(">>> " + etapa.getNomeEtapa());
+                cellTitulo.setCellStyle(baseStyle);
+
+                for (ConfrontoTimesDTO c : etapa.getConfrontos()) {
+                    Row row = sheetJogos.createRow(rowIdx++);
+                    
+                    // Coluna A: Time 1
+                    Cell cellT1 = row.createCell(0);
+                    cellT1.setCellValue(c.getTime1().getNome());
+                    cellT1.setCellStyle(borderStyle);
+
+                    // Colunas B, C, D: Sets 1, 2 e 3 do Time 1
+                    row.createCell(1).setCellStyle(inputStyle);
+                    row.createCell(2).setCellStyle(inputStyle);
+                    row.createCell(3).setCellStyle(inputStyle);
+
+                    Cell cellX = row.createCell(4);
+                    cellX.setCellValue("x");
+                    cellX.setCellStyle(centerStyle);
+
+                    // Colunas E, F, G: Sets 3, 2 e 1 do Time 2 (Invertido para simetria visual)
+                    row.createCell(5).setCellStyle(inputStyle);
+                    row.createCell(6).setCellStyle(inputStyle);
+                    row.createCell(7).setCellStyle(inputStyle);
+
+                    // Coluna H: Time 2
+                    Cell cellT2 = row.createCell(8);
+                    cellT2.setCellValue(c.getTime2().getNome());
+                    cellT2.setCellStyle(borderStyle);
+                }
+                rowIdx++; // Espaço entre etapas
+            }
+
+            // 2. ABA DE RANKING (Dinamismo com Fórmulas)
+            createHeaderSaldo(sheetRanking, headerStyle, "Time", "Pontos Ganhos", "Saldo de Sets");
+            
+            int limiteExcel = rowIdx;
+            for (int i = 0; i < times.size(); i++) {
+                Row row = sheetRanking.createRow(i + 1);
+                String nomeTime = times.get(i).getNome();
+                
+                Cell cellNome = row.createCell(0);
+                cellNome.setCellValue(nomeTime);
+                cellNome.setCellStyle(baseStyle);
+
+                // Ranges Dinâmicos
+                String rT1 = "Confrontos!$A$2:$A$" + limiteExcel;
+                String rT2 = "Confrontos!$I$2:$I$" + limiteExcel;
+                // Sets Time 1
+                String rT1S1 = "Confrontos!$B$2:$B$" + limiteExcel;
+                String rT1S2 = "Confrontos!$C$2:$C$" + limiteExcel;
+                String rT1S3 = "Confrontos!$D$2:$D$" + limiteExcel;
+                // Sets Time 2
+                String rT2S3 = "Confrontos!$F$2:$F$" + limiteExcel;
+                String rT2S2 = "Confrontos!$G$2:$G$" + limiteExcel;
+                String rT2S1 = "Confrontos!$H$2:$H$" + limiteExcel;
+
+                // Lógica de Pontuação em Fórmulas Excel:
+                // Se S1 e S2 ganhos -> 3 pts. Se SomaSets = 2 -> 2 pts. Se SomaSets = 1 -> 1 pt.
+             // 1. Substitua a formulaPontos por esta (Note o uso de VÍRGULAS):
+                String formulaPontos = String.format(
+                    "SUMPRODUCT((%s=\"%s\")*(IF((%s>%s)*(%s>%s),3,IF((%s>%s)+(%s>%s)+(%s>%s)=2,2,IF((%s>%s)+(%s>%s)+(%s>%s)=1,1,0)))))",
+                    rT1, nomeTime, rT1S1, rT2S1, rT1S2, rT2S2, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3
+                ) + " + " +
+                String.format(
+                    "SUMPRODUCT((%s=\"%s\")*(IF((%s>%s)*(%s>%s),3,IF((%s>%s)+(%s>%s)+(%s>%s)=2,2,IF((%s>%s)+(%s>%s)+(%s>%s)=1,1,0)))))",
+                    rT2, nomeTime, rT2S1, rT1S1, rT2S2, rT1S2, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3
+                );
+               /* String formulaPontos = String.format(
+                    "SUMPRODUCT((%s=\"%s\")*(IF((%s>%s)*(%s>%s);3;IF((%s>%s)+(%s>%s)+(%s>%s)=2;2;IF((%s>%s)+(%s>%s)+(%s>%s)=1;1;0)))))",
+                    rT1, nomeTime, rT1S1, rT2S1, rT1S2, rT2S2, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3
+                ) + " + " +
+                String.format(
+                    "SUMPRODUCT((%s=\"%s\")*(IF((%s>%s)*(%s>%s);3;IF((%s>%s)+(%s>%s)+(%s>%s)=2;2;IF((%s>%s)+(%s>%s)+(%s>%s)=1;1;0)))))",
+                    rT2, nomeTime, rT2S1, rT1S1, rT2S2, rT1S2, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3
+                );*/
+
+                Cell cellPts = row.createCell(1);
+                cellPts.setCellFormula(formulaPontos);
+                cellPts.setCellStyle(centerStyle);
+
+                // Saldo de Sets (Ganhos - Perdidos)
+                String formulaSaldo = String.format(
+                	    "SUMPRODUCT((%s=\"%s\")*((%s>%s)+(%s>%s)+(%s>%s)-((%s<%s)+(%s<%s)+(%s<%s))))",
+                	    rT1, nomeTime, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3
+                	) + " + " +
+                	String.format(
+                	    "SUMPRODUCT((%s=\"%s\")*((%s>%s)+(%s>%s)+(%s>%s)-((%s<%s)+(%s<%s)+(%s<%s))))",
+                	    rT2, nomeTime, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3
+                	);
+                /*String formulaSaldo = String.format(
+                    "SUMPRODUCT((%s=\"%s\")*((%s>%s)+(%s>%s)+(%s>%s) - ((%s<%s)+(%s<%s)+(%s<%s))))",
+                    rT1, nomeTime, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3, rT1S1, rT2S1, rT1S2, rT2S2, rT1S3, rT2S3
+                ) + " + " +
+                String.format(
+                    "SUMPRODUCT((%s=\"%s\")*((%s>%s)+(%s>%s)+(%s>%s) - ((%s<%s)+(%s<%s)+(%s<%s))))",
+                    rT2, nomeTime, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3, rT2S1, rT1S1, rT2S2, rT1S2, rT2S3, rT1S3
+                );*/
+
+                Cell cellSaldo = row.createCell(2);
+                cellSaldo.setCellFormula(formulaSaldo);
+                cellSaldo.setCellStyle(createInputStyleRed(workbook));
+            }
+
+            // Finalização padrão
+            aplicarCoresPodio(sheetRanking, times.size());
+            sheetRanking.setForceFormulaRecalculation(true);
+            
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    private void createHeaderTimes(Sheet sheet, CellStyle headerStyle) {
+        Row header = sheet.createRow(0);
+        String[] titles = {"Time 1", "S1", "S2", "S3", "vs", "S3", "S2", "S1", "Time 2"};
+        for (int i = 0; i < titles.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(titles[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, i == 0 || i == 8 ? 6000 : 1500);
+        }
+    }
 }

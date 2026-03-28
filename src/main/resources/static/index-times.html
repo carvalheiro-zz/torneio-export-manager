@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Torneio - Times</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .topo-manager {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 4px solid #3498db; /* Azul para diferenciar da versão de atletas */
+        }
+        .instrucoes {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .card-header-custom {
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+	<header class="topo-manager shadow-sm">
+        <div class="container text-center">
+            <h2 class="mb-0">TORNEIO EXPORT MANAGER - <span class="text-info">TODOS CONTRA TODOS (Melhor de 3)</span></h2>
+            <small>Distribuição todos contra todos, melhor de 3 e Confrontos Internos</small>
+        </div>
+        
+		<div class="container mt-3 nav-links text-center">
+            <a href="index.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-person-fill"></i> Super 8/12/16
+            </a>
+            <a href="index-times.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-shield-shaded"></i> Times (Melhor de 3)
+            </a>
+            <a href="index-times-set-unico.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-1-circle"></i> Times (Set Único)
+            </a>
+            <a href="index-grupos.html" class="btn btn-info btn-sm active text-white">
+                <i class="bi bi-diagram-3"></i> Grupos
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow border-0">
+                    <div class="card-header card-header-custom p-3">
+                        <i class="bi bi-gear-fill me-2"></i> Configuração do Chaveamento
+                    </div>
+                    <div class="card-body p-4">
+                        <label for="listaTimes" class="form-label fw-bold">
+                            Nomes dos Times (Um por linha):
+                        </label>
+                        
+                        <textarea id="listaTimes" class="form-control mb-3 shadow-sm" rows="10" 
+                            placeholder="Exemplo:&#10;CEARA&#10;FORTALEZA&#10;CUIABA...">CEARA
+FORTALEZA
+CUIABA
+ATLETICO GO
+JUVENTUDE
+AVAI
+PONTE PRETA
+AMERICA MG
+SPORT</textarea>
+
+                        <div class="instrucoes mb-4">
+                            <p class="mb-2"><strong><i class="bi bi-info-circle"></i> Como funciona:</strong></p>
+                            <ul class="mb-0">
+                                <li><strong>Modo:</strong> Todos contra Todos (Round Robin).</li>
+                                <li><strong>Ímpar:</strong> Se houver número ímpar, o sistema gera folgas automáticas.</li>
+                                <li><strong>Excel:</strong> A planilha gerada já contém fórmulas de 2x0 (3 pts) e 2x1 (2 pts/1 pt).</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid">
+                            <button onclick="exportarExcelTimes()" class="btn btn-primary btn-lg shadow">
+                                <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i> Gerar Planilha de Times
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small text-center bg-white border-top-0 py-3">
+                        <i class="bi bi-shield-lock"></i> Processamento via TorneioTimesController
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function exportarExcelTimes() {
+            const nomes = document.getElementById('listaTimes').value;
+            
+            if (!nomes.trim()) {
+                alert("Por favor, insira os nomes dos times.");
+                return;
+            }
+
+            const linhas = nomes.split('\n').filter(n => n.trim() !== "");
+            if (linhas.length < 2) {
+                alert("É necessário pelo menos 2 times para gerar um torneio.");
+                return;
+            }
+
+            // Submissão para o novo Controller de Times
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/torneio-times/exportar-excel'; 
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'lista1'; 
+            input.value = nomes;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+</body>
+</html>
