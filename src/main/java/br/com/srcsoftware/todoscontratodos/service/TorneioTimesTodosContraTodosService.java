@@ -1,5 +1,6 @@
 package br.com.srcsoftware.todoscontratodos.service;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,10 +54,14 @@ public class TorneioTimesTodosContraTodosService {
         int numParticipantes = times.size();
         int numEtapas = numParticipantes - 1;
         int jogosPorEtapa = numParticipantes / 2;
+        
+        times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
 
         // Nível 1: Aleatoriedade inicial (quem será o pivô fixo no índice 0)
         List<TimeDTO> rotativo = new ArrayList<>(times);
-        Collections.shuffle(rotativo);
+        //Collections.shuffle(rotativo); sorteio antigo
 
         List<List<ConfrontoTimesDTO>> etapas = new ArrayList<>();
 
@@ -126,4 +131,12 @@ public class TorneioTimesTodosContraTodosService {
                 })
                 .collect(Collectors.toCollection(ArrayList::new));
     }
+    
+    public List<TimeDTO> sorteiarAleatoriamente(List<TimeDTO> times) {
+	    List<TimeDTO> timesSorteados = new ArrayList<>(times);
+	    // Shuffle robusto
+	    Collections.shuffle(timesSorteados, new SecureRandom());
+	    
+	    return timesSorteados;
+	}
 }

@@ -20,6 +20,10 @@ public class TorneioTimesTodosContraTodosSetUnicoService {
 
 	public List<EtapaTimesDTO> gerarEtapasTodosContraTodos(List<TimeDTO> times) {
 	    if (times == null || times.size() < 2) return List.of();
+	    
+	    times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
+	    times = sorteiarAleatoriamente(times);
 
 	    // Se a quantidade de times for ímpar, adicionamos um "Time Bye" (Descanso)
 	    List<TimeDTO> participantes = new ArrayList<>(times);
